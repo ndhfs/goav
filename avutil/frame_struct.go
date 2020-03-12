@@ -27,7 +27,7 @@ func (f *Frame) Height() uint {
 }
 
 func (f *Frame) SetHeight(h uint) {
-	f.height = C.uint(h)
+	f.height = C.int(h)
 }
 
 func (f *Frame) Format() int {
