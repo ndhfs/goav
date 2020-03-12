@@ -3,13 +3,13 @@ package main
 import (
 	"log"
 
-	"github.com/asticode/goav/avcodec"
-	"github.com/asticode/goav/avdevice"
-	"github.com/asticode/goav/avfilter"
-	"github.com/asticode/goav/avformat"
-	"github.com/asticode/goav/avutil"
-	"github.com/asticode/goav/swresample"
-	"github.com/asticode/goav/swscale"
+	"github.com/sleonovich1188/goav/avcodec"
+	"github.com/sleonovich1188/goav/avdevice"
+	"github.com/sleonovich1188/goav/avfilter"
+	"github.com/sleonovich1188/goav/avformat"
+	"github.com/sleonovich1188/goav/avutil"
+	"github.com/sleonovich1188/goav/swresample"
+	"github.com/sleonovich1188/goav/swscale"
 )
 
 func main() {
