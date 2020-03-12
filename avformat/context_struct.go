@@ -5,12 +5,22 @@ package avformat
 
 //#cgo pkg-config: libavformat
 //#include <libavformat/avformat.h>
+/*
+int interruptCallback(void *ret)
+{
+    return *((int*)ret);
+}
+AVIOInterruptCB newInterruptCallback(int *ret)
+{
+	AVIOInterruptCB c = { interruptCallback, ret };
+	return c;
+}
+*/
 import "C"
 import (
-	"reflect"
 	"unsafe"
 
-	"github.com/giorgisio/goav/avutil"
+	"github.com/asticode/goav/avutil"
 )
 
 func (ctxt *Context) Chapters() **AvChapter {
@@ -41,28 +51,28 @@ func (ctxt *Context) Pb() *AvIOContext {
 	return (*AvIOContext)(unsafe.Pointer(ctxt.pb))
 }
 
+func (ctxt *Context) SetPb(ctxAvIO *AvIOContext) {
+	ctxt.pb = (*C.struct_AVIOContext)(unsafe.Pointer(ctxAvIO))
+}
+
 func (ctxt *Context) InterruptCallback() AvIOInterruptCB {
 	return AvIOInterruptCB(ctxt.interrupt_callback)
 }
 
-func (ctxt *Context) Programs() []*AvProgram {
-	header := reflect.SliceHeader{
-		Data: uintptr(unsafe.Pointer(ctxt.programs)),
-		Len:  int(ctxt.NbPrograms()),
-		Cap:  int(ctxt.NbPrograms()),
-	}
+func (ctxt *Context) SetInterruptCallback() *int {
+	ret := 0
+	ctxt.interrupt_callback = C.newInterruptCallback((*C.int)(unsafe.Pointer(&ret)))
+	return &ret
+}
 
-	return *((*[]*AvProgram)(unsafe.Pointer(&header)))
+func (ctxt *Context) Programs() **AvProgram {
+	return (**AvProgram)(unsafe.Pointer(ctxt.programs))
 }
 
 func (ctxt *Context) Streams() []*Stream {
-	header := reflect.SliceHeader{
-		Data: uintptr(unsafe.Pointer(ctxt.streams)),
-		Len:  int(ctxt.NbStreams()),
-		Cap:  int(ctxt.NbStreams()),
-	}
+	arr := (*[MAX_ARRAY_SIZE](*Stream))(unsafe.Pointer(ctxt.streams))
 
-	return *((*[]*Stream)(unsafe.Pointer(&header)))
+	return arr[:ctxt.NbStreams()]
 }
 
 func (ctxt *Context) Filename() string {
@@ -263,12 +273,4 @@ func (ctxt *Context) PacketSize() uint {
 
 func (ctxt *Context) Probesize() uint {
 	return uint(ctxt.probesize)
-}
-
-func (ctxt *Context) SetPb(pb *AvIOContext) {
-	ctxt.pb = (*C.struct_AVIOContext)(unsafe.Pointer(pb))
-}
-
-func (ctxt *Context) Pb2() **AvIOContext {
-	return (**AvIOContext)(unsafe.Pointer(&ctxt.pb))
 }

@@ -16,7 +16,7 @@ import (
 
 //Allocate a block of size bytes with alignment suitable for all memory accesses (including vectors if available on the CPU).
 func AvMalloc(s uintptr) unsafe.Pointer {
-	return unsafe.Pointer(C.av_malloc(C.size_t(s)))
+	return C.av_malloc(C.size_t(s))
 }
 
 func AvMallocArray(n, s uintptr) unsafe.Pointer {
@@ -67,13 +67,17 @@ func AvMalloczArray(n, s uintptr) unsafe.Pointer {
 
 //Duplicate the string s.
 func AvStrdup(s string) string {
-	return C.GoString(C.av_strdup(C.CString(s)))
+	cs := C.CString(s)
+	defer C.free(unsafe.Pointer(cs))
+	return C.GoString(C.av_strdup(cs))
 }
 
 //char * 	av_strndup (const char *s, size_t len) av_malloc_attrib
 //Duplicate a substring of the string s.
 func AvStrndup(s string, l uintptr) string {
-	return C.GoString(C.av_strndup(C.CString(s), C.size_t(l)))
+	cs := C.CString(s)
+	defer C.free(unsafe.Pointer(cs))
+	return C.GoString(C.av_strndup(cs, C.size_t(l)))
 }
 
 //Duplicate the buffer p.

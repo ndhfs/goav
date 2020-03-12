@@ -1,2 +1,7 @@
-.idea/
-.vscode/
+/tmp
+/vendor
+/example
+.idea
+
+# Wercker temp directory
+.wercker/

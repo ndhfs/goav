@@ -7,22 +7,18 @@ package avformat
 //#include <libavformat/avformat.h>
 import "C"
 import (
-	"github.com/giorgisio/goav/avcodec"
+	"github.com/asticode/goav/avutil"
 )
 
 //Rational av_stream_get_r_frame_rate (const Stream *s)
-func (s *Stream) AvStreamGetRFrameRate() avcodec.Rational {
-	return newRational(C.av_stream_get_r_frame_rate((*C.struct_AVStream)(s)))
-}
+func (s *Stream) AvStreamGetRFrameRate() avutil.Rational {
+	panic("deprecated")
+	return avutil.Rational{}
+	/*
+	r := (C.struct_AVRational)(C.av_stream_get_r_frame_rate((*C.struct_AVStream)(s)))
 
-//void av_stream_set_r_frame_rate (Stream *s, Rational r)
-func (s *Stream) AvStreamSetRFrameRate(r avcodec.Rational) {
-	rat := C.struct_AVRational{
-		num: C.int(r.Num()),
-		den: C.int(r.Den()),
-	}
-
-	C.av_stream_set_r_frame_rate((*C.struct_AVStream)(s), rat)
+	return *(*avutil.Rational)(unsafe.Pointer(&r))
+	*/
 }
 
 //struct CodecParserContext * av_stream_get_parser (const Stream *s)

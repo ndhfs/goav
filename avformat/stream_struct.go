@@ -5,20 +5,21 @@ package avformat
 
 //#cgo pkg-config: libavformat
 //#include <libavformat/avformat.h>
+//#include <libavutil/rational.h>
 import "C"
 import (
 	"unsafe"
 
-	"github.com/giorgisio/goav/avcodec"
-	"github.com/giorgisio/goav/avutil"
+	"github.com/asticode/goav/avcodec"
+	"github.com/asticode/goav/avutil"
 )
-
-func (avs *Stream) CodecParameters() *avcodec.AvCodecParameters {
-	return (*avcodec.AvCodecParameters)(unsafe.Pointer(avs.codecpar))
-}
 
 func (avs *Stream) Codec() *CodecContext {
 	return (*CodecContext)(unsafe.Pointer(avs.codec))
+}
+
+func (avs *Stream) CodecParameters() *avcodec.CodecParameters {
+	return (*avcodec.CodecParameters)(unsafe.Pointer(avs.codecpar))
 }
 
 func (avs *Stream) Metadata() *avutil.Dictionary {
@@ -29,8 +30,8 @@ func (avs *Stream) IndexEntries() *AvIndexEntry {
 	return (*AvIndexEntry)(unsafe.Pointer(avs.index_entries))
 }
 
-func (avs *Stream) AttachedPic() avcodec.Packet {
-	return *fromCPacket(&avs.attached_pic)
+func (avs *Stream) AttachedPic() Packet {
+	return Packet(avs.attached_pic)
 }
 
 func (avs *Stream) SideData() *AvPacketSideData {
@@ -41,24 +42,28 @@ func (avs *Stream) ProbeData() AvProbeData {
 	return AvProbeData(avs.probe_data)
 }
 
-func (avs *Stream) AvgFrameRate() avcodec.Rational {
-	return newRational(avs.avg_frame_rate)
+func (avs *Stream) AvgFrameRate() avutil.Rational {
+	return *(*avutil.Rational)(unsafe.Pointer(&avs.avg_frame_rate))
 }
 
 // func (avs *Stream) DisplayAspectRatio() *Rational {
 // 	return (*Rational)(unsafe.Pointer(avs.display_aspect_ratio))
 // }
 
-func (avs *Stream) RFrameRate() avcodec.Rational {
-	return newRational(avs.r_frame_rate)
+func (avs *Stream) RFrameRate() avutil.Rational {
+	return *(*avutil.Rational)(unsafe.Pointer(&avs.r_frame_rate))
 }
 
-func (avs *Stream) SampleAspectRatio() avcodec.Rational {
-	return newRational(avs.sample_aspect_ratio)
+func (avs *Stream) SampleAspectRatio() avutil.Rational {
+	return *(*avutil.Rational)(unsafe.Pointer(&avs.sample_aspect_ratio))
 }
 
-func (avs *Stream) TimeBase() avcodec.Rational {
-	return newRational(avs.time_base)
+func (avs *Stream) TimeBase() avutil.Rational {
+	return *(*avutil.Rational)(unsafe.Pointer(&avs.time_base))
+}
+
+func (avs *Stream) SetTimeBase(r avutil.Rational)  {
+	avs.time_base = *((*C.struct_AVRational)(unsafe.Pointer(&r)))
 }
 
 // func (avs *Stream) RecommendedEncoderConfiguration() string {
@@ -231,8 +236,4 @@ func (avs *Stream) PtsReorderErrorCount() uint8 {
 
 func (avs *Stream) IndexEntriesAllocatedSize() uint {
 	return uint(avs.index_entries_allocated_size)
-}
-
-func (avs *Stream) Free() {
-	C.av_freep(unsafe.Pointer(avs))
 }

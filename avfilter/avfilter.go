@@ -13,18 +13,23 @@ package avfilter
 import "C"
 import (
 	"unsafe"
+
+	"github.com/asticode/goav/avutil"
 )
 
 type (
-	Filter     C.struct_AVFilter
-	Context    C.struct_AVFilterContext
-	Link       C.struct_AVFilterLink
-	Graph      C.struct_AVFilterGraph
-	Input      C.struct_AVFilterInOut
-	Pad        C.struct_AVFilterPad
-	Dictionary C.struct_AVDictionary
-	Class      C.struct_AVClass
-	MediaType  C.enum_AVMediaType
+	Filter    C.struct_AVFilter
+	Context   C.struct_AVFilterContext
+	Link      C.struct_AVFilterLink
+	Graph     C.struct_AVFilterGraph
+	Input     C.struct_AVFilterInOut
+	Pad       C.struct_AVFilterPad
+	Class     C.struct_AVClass
+	MediaType C.enum_AVMediaType
+)
+
+const (
+	MAX_ARRAY_SIZE = 1<<29 - 1
 )
 
 //Return the LIBAvFILTER_VERSION_INT constant.
@@ -69,13 +74,16 @@ func AvfilterLinkFree(l **Link) {
 
 //Get the number of channels of a link.
 func AvfilterLinkGetChannels(l *Link) int {
-	return int(C.avfilter_link_get_channels((*C.struct_AVFilterLink)(l)))
+	panic("deprecated")
+	return 0
+	//return int(C.avfilter_link_get_channels((*C.struct_AVFilterLink)(l)))
 }
 
 //Set the closed field of a link.
-func AvfilterLinkSetClosed(l *Link, c int) {
-	C.avfilter_link_set_closed((*C.struct_AVFilterLink)(l), C.int(c))
-}
+// deprecated
+// func AvfilterLinkSetClosed(l *Link, c int) {
+// 	C.avfilter_link_set_closed((*C.struct_AVFilterLink)(l), C.int(c))
+// }
 
 //Negotiate the media format, dimensions, etc of all inputs to a filter.
 func AvfilterConfigLinks(f *Context) int {
@@ -84,27 +92,68 @@ func AvfilterConfigLinks(f *Context) int {
 
 //Make the filter instance process a command.
 func AvfilterProcessCommand(f *Context, cmd, arg, res string, l, fl int) int {
-	return int(C.avfilter_process_command((*C.struct_AVFilterContext)(f), C.CString(cmd), C.CString(arg), C.CString(res), C.int(l), C.int(fl)))
+	cc := C.CString(cmd)
+	defer C.free(unsafe.Pointer(cc))
+	ca := C.CString(arg)
+	defer C.free(unsafe.Pointer(ca))
+	cr := C.CString(res)
+	defer C.free(unsafe.Pointer(cr))
+	return int(C.avfilter_process_command((*C.struct_AVFilterContext)(f), cc, ca, cr, C.int(l), C.int(fl)))
 }
 
 //Initialize the filter system.
 func AvfilterRegisterAll() {
-	C.avfilter_register_all()
+	panic("deprecated")
+	//C.avfilter_register_all()
 }
 
 //Initialize a filter with the supplied parameters.
 func (ctx *Context) AvfilterInitStr(args string) int {
-	return int(C.avfilter_init_str((*C.struct_AVFilterContext)(ctx), C.CString(args)))
+	ca := C.CString(args)
+	defer C.free(unsafe.Pointer(ca))
+	return int(C.avfilter_init_str((*C.struct_AVFilterContext)(ctx), ca))
 }
 
 //Initialize a filter with the supplied dictionary of options.
-func (ctx *Context) AvfilterInitDict(o **Dictionary) int {
+func (ctx *Context) AvfilterInitDict(o **avutil.Dictionary) int {
 	return int(C.avfilter_init_dict((*C.struct_AVFilterContext)(ctx), (**C.struct_AVDictionary)(unsafe.Pointer(o))))
 }
 
 //Free a filter context.
 func (ctx *Context) AvfilterFree() {
 	C.avfilter_free((*C.struct_AVFilterContext)(ctx))
+}
+
+func (ctx *Context) NbInputs() uint {
+	return uint(ctx.nb_inputs)
+}
+
+func (ctx *Context) NbOutputs() uint {
+	return uint(ctx.nb_outputs)
+}
+
+func (ctx *Context) Inputs() []*Link {
+	if ctx.NbInputs() == 0 {
+		return nil
+	}
+
+	arr := (*[MAX_ARRAY_SIZE](*Link))(unsafe.Pointer(ctx.inputs))
+
+	if arr == nil {
+		return nil
+	}
+
+	return arr[:ctx.NbInputs()]
+}
+
+func (ctx *Context) Outputs() []*Link {
+	if ctx.NbOutputs() == 0 {
+		return nil
+	}
+
+	arr := (*[MAX_ARRAY_SIZE](*Link))(unsafe.Pointer(ctx.outputs))
+
+	return arr[:ctx.NbOutputs()]
 }
 
 //Insert a filter in the middle of an existing link.
@@ -123,6 +172,26 @@ func AvfilterInoutAlloc() *Input {
 }
 
 //Free the supplied list of Input and set *inout to NULL.
-func AvfilterInoutFree(i *Input) {
+func AvfilterInoutFree(i **Input) {
 	C.avfilter_inout_free((**C.struct_AVFilterInOut)(unsafe.Pointer(i)))
+}
+
+func (i *Input) SetName(n string) {
+	i.name = C.CString(n)
+}
+
+func (i *Input) SetFilterCtx(ctx *Context) {
+	i.filter_ctx = (*C.struct_AVFilterContext)(ctx)
+}
+
+func (i *Input) SetPadIdx(idx int) {
+	i.pad_idx = C.int(idx)
+}
+
+func (i *Input) SetNext(n *Input) {
+	i.next = (*C.struct_AVFilterInOut)(n)
+}
+
+func (l *Link) TimeBase() avutil.Rational {
+	return *(*avutil.Rational)(unsafe.Pointer(&l.time_base))
 }

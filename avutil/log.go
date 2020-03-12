@@ -1,31 +1,27 @@
-// Use of this source code is governed by a MIT license that can be found in the LICENSE file.
-// Giorgis (habtom@giorgis.io)
-
 package avutil
 
-/*
-	#cgo pkg-config: libavutil
-	#include <libavutil/log.h>
-	#include <stdlib.h>
-*/
+//#cgo pkg-config: libavutil
+//#include <libavutil/log.h>
 import "C"
 
+// Logging constants
 const (
-	AV_LOG_QUIET   = -8
-	AV_LOG_PANIC   = 0
-	AV_LOG_FATAL   = 8
-	AV_LOG_ERROR   = 16
-	AV_LOG_WARNING = 24
-	AV_LOG_INFO    = 32
-	AV_LOG_VERBOSE = 40
-	AV_LOG_DEBUG   = 48
-	AV_LOG_TRACE   = 56
+	AV_LOG_QUIET   = C.AV_LOG_QUIET
+	AV_LOG_PANIC   = C.AV_LOG_PANIC
+	AV_LOG_FATAL   = C.AV_LOG_FATAL
+	AV_LOG_ERROR   = C.AV_LOG_ERROR
+	AV_LOG_WARNING = C.AV_LOG_WARNING
+	AV_LOG_INFO    = C.AV_LOG_INFO
+	AV_LOG_VERBOSE = C.AV_LOG_VERBOSE
+	AV_LOG_DEBUG   = C.AV_LOG_DEBUG
 )
 
-func AvLogSetLevel(level int) {
-	C.av_log_set_level(C.int(level))
-}
-
+// AvLogGetLevel returns the current log level.
 func AvLogGetLevel() int {
 	return int(C.av_log_get_level())
+}
+
+// AvLogSetLevel sets the log level.
+func AvLogSetLevel(level int) {
+	C.av_log_set_level(C.int(level))
 }

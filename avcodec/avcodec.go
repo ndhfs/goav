@@ -14,18 +14,21 @@ package avcodec
 //#include <libavformat/avformat.h>
 //#include <libavcodec/avcodec.h>
 //#include <libavutil/avutil.h>
+//#include <libavutil/frame.h>
 import "C"
 import (
 	"unsafe"
+
+	"github.com/asticode/goav/avutil"
 )
 
 type (
 	Codec                         C.struct_AVCodec
 	Context                       C.struct_AVCodecContext
+	CodecParameters               C.struct_AVCodecParameters
 	Descriptor                    C.struct_AVCodecDescriptor
 	Parser                        C.struct_AVCodecParser
 	ParserContext                 C.struct_AVCodecParserContext
-	Dictionary                    C.struct_AVDictionary
 	Frame                         C.struct_AVFrame
 	MediaType                     C.enum_AVMediaType
 	Packet                        C.struct_AVPacket
@@ -33,7 +36,6 @@ type (
 	BitStreamFilterContext        C.struct_AVBitStreamFilterContext
 	Rational                      C.struct_AVRational
 	Class                         C.struct_AVClass
-	AvCodecParameters             C.struct_AVCodecParameters
 	AvHWAccel                     C.struct_AVHWAccel
 	AvPacketSideData              C.struct_AVPacketSideData
 	AvPanScan                     C.struct_AVPanScan
@@ -53,46 +55,76 @@ type (
 	AvDiscard                     C.enum_AVDiscard
 	AvFieldOrder                  C.enum_AVFieldOrder
 	AvPacketSideDataType          C.enum_AVPacketSideDataType
-	PixelFormat                   C.enum_AVPixelFormat
 	AvSampleFormat                C.enum_AVSampleFormat
 )
 
-func (cp *AvCodecParameters) AvCodecGetId() CodecId {
-	return *((*CodecId)(unsafe.Pointer(&cp.codec_id)))
-}
+const (
+	AV_PKT_FLAG_KEY     = C.AV_PKT_FLAG_KEY
+	AV_PKT_FLAG_CORRUPT = C.AV_PKT_FLAG_CORRUPT
+	AV_PKT_FLAG_DISCARD = C.AV_PKT_FLAG_DISCARD
+)
 
-func (cp *AvCodecParameters) AvCodecGetType() MediaType {
-	return *((*MediaType)(unsafe.Pointer(&cp.codec_type)))
-}
+const (
+	AVDISCARD_NONE     = C.AVDISCARD_NONE     // discard nothing
+	AVDISCARD_DEFAULT  = C.AVDISCARD_DEFAULT  // discard useless packets like 0 size packets in avi
+	AVDISCARD_NONREF   = C.AVDISCARD_NONREF   // discard all non reference
+	AVDISCARD_BIDIR    = C.AVDISCARD_BIDIR    // discard all bidirectional frames
+	AVDISCARD_NONINTRA = C.AVDISCARD_NONINTRA // discard all non intra frames
+	AVDISCARD_NONKEY   = C.AVDISCARD_NONKEY   // discard all frames except keyframes
+	AVDISCARD_ALL      = C.AVDISCARD_ALL      // discard all
+)
 
-func (cp *AvCodecParameters) AvCodecGetWidth() int {
-	return (int)(*((*int32)(unsafe.Pointer(&cp.width))))
-}
+const (
+	AVMEDIA_TYPE_ATTACHMENT = C.AVMEDIA_TYPE_ATTACHMENT
+	AVMEDIA_TYPE_AUDIO      = C.AVMEDIA_TYPE_AUDIO
+	AVMEDIA_TYPE_DATA       = C.AVMEDIA_TYPE_DATA
+	AVMEDIA_TYPE_NB         = C.AVMEDIA_TYPE_NB
+	AVMEDIA_TYPE_SUBTITLE   = C.AVMEDIA_TYPE_SUBTITLE
+	AVMEDIA_TYPE_UNKNOWN    = C.AVMEDIA_TYPE_UNKNOWN
+	AVMEDIA_TYPE_VIDEO      = C.AVMEDIA_TYPE_VIDEO
+)
 
-func (cp *AvCodecParameters) AvCodecGetHeight() int {
-	return (int)(*((*int32)(unsafe.Pointer(&cp.height))))
-}
-
-func (cp *AvCodecParameters) AvCodecGetChannels() int {
-	return *((*int)(unsafe.Pointer(&cp.channels)))
-}
-
-func (cp *AvCodecParameters) AvCodecGetSampleRate() int {
-	return *((*int)(unsafe.Pointer(&cp.sample_rate)))
-}
+const (
+	AV_PKT_DATA_PALETTE                    = C.AV_PKT_DATA_PALETTE
+	AV_PKT_DATA_NEW_EXTRADATA              = C.AV_PKT_DATA_NEW_EXTRADATA
+	AV_PKT_DATA_PARAM_CHANGE               = C.AV_PKT_DATA_PARAM_CHANGE
+	AV_PKT_DATA_H263_MB_INFO               = C.AV_PKT_DATA_H263_MB_INFO
+	AV_PKT_DATA_REPLAYGAIN                 = C.AV_PKT_DATA_REPLAYGAIN
+	AV_PKT_DATA_DISPLAYMATRIX              = C.AV_PKT_DATA_DISPLAYMATRIX
+	AV_PKT_DATA_STEREO3D                   = C.AV_PKT_DATA_STEREO3D
+	AV_PKT_DATA_AUDIO_SERVICE_TYPE         = C.AV_PKT_DATA_AUDIO_SERVICE_TYPE
+	AV_PKT_DATA_SKIP_SAMPLES               = C.AV_PKT_DATA_SKIP_SAMPLES
+	AV_PKT_DATA_JP_DUALMONO                = C.AV_PKT_DATA_JP_DUALMONO
+	AV_PKT_DATA_STRINGS_METADATA           = C.AV_PKT_DATA_STRINGS_METADATA
+	AV_PKT_DATA_SUBTITLE_POSITION          = C.AV_PKT_DATA_SUBTITLE_POSITION
+	AV_PKT_DATA_MATROSKA_BLOCKADDITIONAL   = C.AV_PKT_DATA_MATROSKA_BLOCKADDITIONAL
+	AV_PKT_DATA_WEBVTT_IDENTIFIER          = C.AV_PKT_DATA_WEBVTT_IDENTIFIER
+	AV_PKT_DATA_WEBVTT_SETTINGS            = C.AV_PKT_DATA_WEBVTT_SETTINGS
+	AV_PKT_DATA_METADATA_UPDATE            = C.AV_PKT_DATA_METADATA_UPDATE
+	AV_PKT_DATA_MPEGTS_STREAM_ID           = C.AV_PKT_DATA_MPEGTS_STREAM_ID
+	AV_PKT_DATA_MASTERING_DISPLAY_METADATA = C.AV_PKT_DATA_MASTERING_DISPLAY_METADATA
+	AV_PKT_DATA_CONTENT_LIGHT_LEVEL        = C.AV_PKT_DATA_CONTENT_LIGHT_LEVEL
+	AV_PKT_DATA_SPHERICAL                  = C.AV_PKT_DATA_SPHERICAL
+	AV_PKT_DATA_A53_CC                     = C.AV_PKT_DATA_A53_CC
+)
 
 func (c *Codec) AvCodecGetMaxLowres() int {
-	return int(C.av_codec_get_max_lowres((*C.struct_AVCodec)(c)))
+	panic("deprecated")
+	return 0
+	//return int(C.av_codec_get_max_lowres((*C.struct_AVCodec)(c)))
 }
 
-// AvCodecNext If c is NULL, returns the first registered codec, if c is non-NULL,
+//If c is NULL, returns the first registered codec, if c is non-NULL,
 func (c *Codec) AvCodecNext() *Codec {
-	return (*Codec)(C.av_codec_next((*C.struct_AVCodec)(c)))
+	panic("deprecated")
+	return nil
+	//return (*Codec)(C.av_codec_next((*C.struct_AVCodec)(c)))
 }
 
-// Register the codec codec and initialize libavcodec.
+//Register the codec codec and initialize libavcodec.
 func (c *Codec) AvcodecRegister() {
-	C.avcodec_register((*C.struct_AVCodec)(c))
+	panic("deprecated")
+	//C.avcodec_register((*C.struct_AVCodec)(c))
 }
 
 //Return a name for the specified profile, if available.
@@ -102,7 +134,7 @@ func (c *Codec) AvGetProfileName(p int) string {
 
 //Allocate an Context and set its fields to default values.
 func (c *Codec) AvcodecAllocContext3() *Context {
-	return (*Context)(C.avcodec_alloc_context3((*C.struct_AVCodec)(c)))
+	return (*Context)(unsafe.Pointer(C.avcodec_alloc_context3((*C.struct_AVCodec)(c))))
 }
 
 func (c *Codec) AvCodecIsEncoder() int {
@@ -111,6 +143,54 @@ func (c *Codec) AvCodecIsEncoder() int {
 
 func (c *Codec) AvCodecIsDecoder() int {
 	return int(C.av_codec_is_decoder((*C.struct_AVCodec)(c)))
+}
+
+func (c *Codec) SupportedSamplerates() []int {
+	r := make([]int, 0)
+	if c.supported_samplerates == nil {
+		return r
+	}
+	size := unsafe.Sizeof(*c.supported_samplerates)
+	for i := 0; ; i++ {
+		p := *(*C.int)(unsafe.Pointer(uintptr(unsafe.Pointer(c.supported_samplerates)) + uintptr(i)*size))
+		if p == 0 {
+			break
+		}
+		r = append(r, int(p))
+	}
+	return r
+}
+
+func (c *Codec) SampleFmts() []AvSampleFormat {
+	r := make([]AvSampleFormat, 0)
+	if c.sample_fmts == nil {
+		return r
+	}
+	size := unsafe.Sizeof(*c.sample_fmts)
+	for i := 0; ; i++ {
+		p := *(*C.int)(unsafe.Pointer(uintptr(unsafe.Pointer(c.sample_fmts)) + uintptr(i)*size))
+		if p == C.AV_SAMPLE_FMT_NONE {
+			break
+		}
+		r = append(r, AvSampleFormat(p))
+	}
+	return r
+}
+
+func (c *Codec) ChannelLayouts() []uint64 {
+	r := make([]uint64, 0)
+	if c.channel_layouts == nil {
+		return r
+	}
+	size := unsafe.Sizeof(*c.channel_layouts)
+	for i := 0; ; i++ {
+		p := *(*C.uint64_t)(unsafe.Pointer(uintptr(unsafe.Pointer(c.channel_layouts)) + uintptr(i)*size))
+		if p == 0 {
+			break
+		}
+		r = append(r, uint64(p))
+	}
+	return r
 }
 
 //Same behaviour av_fast_malloc but the buffer has additional FF_INPUT_BUFFER_PADDING_SIZE at the end which will always be 0.
@@ -134,13 +214,6 @@ func AvcodecLicense() string {
 	return C.GoString(C.avcodec_license())
 }
 
-//Register all the codecs, parsers and bitstream filters which were enabled at configuration time.
-func AvcodecRegisterAll() {
-	C.av_register_all()
-	C.avcodec_register_all()
-	// C.av_log_set_level(0xffff)
-}
-
 //Get the Class for Context.
 func AvcodecGetClass() *Class {
 	return (*Class)(C.avcodec_get_class())
@@ -161,17 +234,13 @@ func AvsubtitleFree(s *AvSubtitle) {
 	C.avsubtitle_free((*C.struct_AVSubtitle)(s))
 }
 
-func AvPacketAlloc() *Packet {
-	return (*Packet)(C.av_packet_alloc())
-}
-
 //Pack a dictionary for use in side_data.
-func AvPacketPackDictionary(d *Dictionary, s *int) *uint8 {
+func AvPacketPackDictionary(d *avutil.Dictionary, s *int) *uint8 {
 	return (*uint8)(C.av_packet_pack_dictionary((*C.struct_AVDictionary)(d), (*C.int)(unsafe.Pointer(s))))
 }
 
 //Unpack a dictionary from side_data.
-func AvPacketUnpackDictionary(d *uint8, s int, dt **Dictionary) int {
+func AvPacketUnpackDictionary(d *uint8, s int, dt **avutil.Dictionary) int {
 	return int(C.av_packet_unpack_dictionary((*C.uint8_t)(d), C.int(s), (**C.struct_AVDictionary)(unsafe.Pointer(dt))))
 }
 
@@ -180,13 +249,11 @@ func AvcodecFindDecoder(id CodecId) *Codec {
 	return (*Codec)(C.avcodec_find_decoder((C.enum_AVCodecID)(id)))
 }
 
-func AvCodecIterate(p *unsafe.Pointer) *Codec {
-	return (*Codec)(C.av_codec_iterate(p))
-}
-
 //Find a registered decoder with the specified name.
 func AvcodecFindDecoderByName(n string) *Codec {
-	return (*Codec)(C.avcodec_find_decoder_by_name(C.CString(n)))
+	cn := C.CString(n)
+	defer C.free(unsafe.Pointer(cn))
+	return (*Codec)(C.avcodec_find_decoder_by_name(cn))
 }
 
 //Converts AvChromaLocation to swscale x/y chroma position.
@@ -206,16 +273,21 @@ func AvcodecFindEncoder(id CodecId) *Codec {
 
 //Find a registered encoder with the specified name.
 func AvcodecFindEncoderByName(c string) *Codec {
-	return (*Codec)(C.avcodec_find_encoder_by_name(C.CString(c)))
+	cc := C.CString(c)
+	defer C.free(unsafe.Pointer(cc))
+	return (*Codec)(C.avcodec_find_encoder_by_name(cc))
 }
 
 //Put a string representing the codec tag codec_tag in buf.
-func AvGetCodecTagString(b string, bf uintptr, c uint) uintptr {
-	return uintptr(C.av_get_codec_tag_string(C.CString(b), C.size_t(bf), C.uint(c)))
-}
+// Deprecated
+// func AvGetCodecTagString(b string, bf uintptr, c uint) uintptr {
+// 	return uintptr(C.av_get_codec_tag_string(C.CString(b), C.size_t(bf), C.uint(c)))
+// }
 
 func AvcodecString(b string, bs int, ctxt *Context, e int) {
-	C.avcodec_string(C.CString(b), C.int(bs), (*C.struct_AVCodecContext)(ctxt), C.int(e))
+	cb := C.CString(b)
+	defer C.free(unsafe.Pointer(cb))
+	C.avcodec_string(cb, C.int(bs), (*C.struct_AVCodecContext)(unsafe.Pointer(ctxt)), C.int(e))
 }
 
 //Fill Frame audio data and linesize pointers.
@@ -251,7 +323,9 @@ func AvXiphlacing(s *string, v uint) uint {
 //If hwaccel is NULL, returns the first registered hardware accelerator, if hwaccel is non-NULL,
 //returns the next registered hardware accelerator after hwaccel, or NULL if hwaccel is the last one.
 func (a *AvHWAccel) AvHwaccelNext() *AvHWAccel {
-	return (*AvHWAccel)(C.av_hwaccel_next((*C.struct_AVHWAccel)(a)))
+	panic("deprecated")
+	return nil
+	//return (*AvHWAccel)(C.av_hwaccel_next((*C.struct_AVHWAccel)(a)))
 }
 
 //Get the type of the given codec.
@@ -275,9 +349,27 @@ func (d *Descriptor) AvcodecDescriptorNext() *Descriptor {
 }
 
 func AvcodecDescriptorGetByName(n string) *Descriptor {
-	return (*Descriptor)(C.avcodec_descriptor_get_by_name(C.CString(n)))
+	cn := C.CString(n)
+	defer C.free(unsafe.Pointer(cn))
+	return (*Descriptor)(C.avcodec_descriptor_get_by_name(cn))
 }
 
-func (f *Frame) Pts() int64 {
-	return int64(f.pts)
+func AvcodecReceivePacket(avctx *Context, avpkt *Packet) int {
+	return int(C.avcodec_receive_packet((*C.struct_AVCodecContext)(avctx), (*C.struct_AVPacket)(avpkt)))
+}
+
+// AvcodecSendPacket send packet data as input to a decoder.
+// See the ffmpeg documentation: https://www.ffmpeg.org/doxygen/trunk/group__lavc__encdec.html
+func AvcodecSendPacket(avctx *Context, avpkt *Packet) int {
+	return int(C.avcodec_send_packet((*C.struct_AVCodecContext)(avctx), (*C.struct_AVPacket)(avpkt)))
+}
+
+// AvcodecReceiveFrame receives a frame from the codec
+// See the ffmpeg documentation: https://www.ffmpeg.org/doxygen/trunk/group__lavc__encdec.html
+func AvcodecReceiveFrame(avctx *Context, frame *avutil.Frame) int {
+	return int(C.avcodec_receive_frame((*C.struct_AVCodecContext)(avctx), (*C.struct_AVFrame)(unsafe.Pointer(frame))))
+}
+
+func AvcodecSendFrame(avctx *Context, frame *avutil.Frame) int {
+	return int(C.avcodec_send_frame((*C.struct_AVCodecContext)(avctx), (*C.struct_AVFrame)(unsafe.Pointer(frame))))
 }

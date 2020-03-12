@@ -9,9 +9,12 @@ package avutil
 
 //#cgo pkg-config: libavutil
 //#include <libavutil/avutil.h>
+//#include <libavutil/channel_layout.h>
 //#include <stdlib.h>
+//#include <errno.h>
 import "C"
 import (
+	"fmt"
 	"unsafe"
 )
 
@@ -23,6 +26,62 @@ type (
 	AvPictureType C.enum_AVPictureType
 	PixelFormat   C.enum_AVPixelFormat
 	File          C.FILE
+)
+
+const (
+	AV_TIME_BASE   = C.AV_TIME_BASE
+	AV_NOPTS_VALUE = C.AV_NOPTS_VALUE
+)
+
+var AV_TIME_BASE_Q Rational = NewRational(1, AV_TIME_BASE)
+
+const (
+	AVMEDIA_TYPE_UNKNOWN    = C.AVMEDIA_TYPE_UNKNOWN
+	AVMEDIA_TYPE_VIDEO      = C.AVMEDIA_TYPE_VIDEO
+	AVMEDIA_TYPE_AUDIO      = C.AVMEDIA_TYPE_AUDIO
+	AVMEDIA_TYPE_DATA       = C.AVMEDIA_TYPE_DATA
+	AVMEDIA_TYPE_SUBTITLE   = C.AVMEDIA_TYPE_SUBTITLE
+	AVMEDIA_TYPE_ATTACHMENT = C.AVMEDIA_TYPE_ATTACHMENT
+	AVMEDIA_TYPE_NB         = C.AVMEDIA_TYPE_NB
+)
+
+// MediaTypeFromString returns a media type from a string
+func MediaTypeFromString(i string) MediaType {
+	switch i {
+	case "audio":
+		return AVMEDIA_TYPE_AUDIO
+	case "subtitle":
+		return AVMEDIA_TYPE_SUBTITLE
+	case "video":
+		return AVMEDIA_TYPE_VIDEO
+	default:
+		return -1
+	}
+}
+
+const (
+	AV_CH_FRONT_LEFT    = 0x1
+	AV_CH_FRONT_RIGHT   = 0x2
+	AV_CH_LAYOUT_STEREO = 0x3 //(AV_CH_FRONT_LEFT | AV_CH_FRONT_RIGHT)
+)
+
+const (
+	AVERROR_EAGAIN = -(C.EAGAIN)
+	AVERROR_EIO    = -(C.EIO)
+	AVERROR_EOF    = C.AVERROR_EOF
+	AVERROR_EPIPE  = -(C.EPIPE)
+)
+
+const (
+	MAX_AVERROR_STR_LEN        = 255
+	MAX_CHANNEL_LAYOUT_STR_LEN = 64
+)
+
+const (
+	AV_PICTURE_TYPE_NONE = C.AV_PICTURE_TYPE_NONE
+	AV_PICTURE_TYPE_I    = C.AV_PICTURE_TYPE_I
+	AV_PICTURE_TYPE_B    = C.AV_PICTURE_TYPE_B
+	AV_PICTURE_TYPE_P    = C.AV_PICTURE_TYPE_P
 )
 
 //Return the LIBAvUTIL_VERSION_INT constant.
@@ -62,11 +121,44 @@ func AvIntListLengthForSize(e uint, l int, t uint64) uint {
 
 //Open a file using a UTF-8 filename.
 func AvFopenUtf8(p, m string) *File {
-	f := C.av_fopen_utf8(C.CString(p), C.CString(m))
+	cp := C.CString(p)
+	defer C.free(unsafe.Pointer(cp))
+	cm := C.CString(m)
+	defer C.free(unsafe.Pointer(cm))
+	f := C.av_fopen_utf8(cp, cm)
 	return (*File)(f)
 }
 
 //Return the fractional representation of the internal time base.
 func AvGetTimeBaseQ() Rational {
 	return (Rational)(C.av_get_time_base_q())
+}
+
+func AvGetChannelLayoutNbChannels(channelLayout uint64) int {
+	return int(C.av_get_channel_layout_nb_channels(C.uint64_t(channelLayout)))
+}
+
+func AvGetChannelLayoutString(channelLayout uint64) string {
+	bufSize := C.size_t(MAX_CHANNEL_LAYOUT_STR_LEN)
+	buf := (*C.char)(C.malloc(bufSize))
+	if buf == nil {
+		return fmt.Sprintf("unknown channel layout with code %d", channelLayout)
+	}
+	defer C.free(unsafe.Pointer(buf))
+	C.av_get_channel_layout_string(buf, C.int(bufSize), 0, C.uint64_t(channelLayout))
+	return C.GoString(buf)
+}
+
+func AvStrerr(errcode int) string {
+	errbufSize := C.size_t(MAX_AVERROR_STR_LEN)
+	errbuf := (*C.char)(C.malloc(errbufSize))
+	if errbuf == nil {
+		return fmt.Sprintf("unknown error with code %d", errcode)
+	}
+	defer C.free(unsafe.Pointer(errbuf))
+	ret := C.av_strerror(C.int(errcode), errbuf, errbufSize)
+	if ret < 0 {
+		return fmt.Sprintf("unknown error with code %d", errcode)
+	}
+	return C.GoString(errbuf)
 }

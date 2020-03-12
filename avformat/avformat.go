@@ -16,13 +16,13 @@ package avformat
 //#include <libavcodec/avcodec.h>
 //#include <libavutil/avutil.h>
 //#include <libavutil/opt.h>
+//#include <libavutil/rational.h>
 //#include <libavdevice/avdevice.h>
 import "C"
 import (
 	"unsafe"
 
-	"github.com/giorgisio/goav/avcodec"
-	"github.com/giorgisio/goav/avutil"
+	"github.com/asticode/goav/avutil"
 )
 
 type (
@@ -37,6 +37,7 @@ type (
 	AvProgram                  C.struct_AVProgram
 	AvChapter                  C.struct_AVChapter
 	AvPacketList               C.struct_AVPacketList
+	Packet                     C.struct_AVPacket
 	CodecParserContext         C.struct_AVCodecParserContext
 	AvIOContext                C.struct_AVIOContext
 	AvCodec                    C.struct_AVCodec
@@ -54,38 +55,60 @@ type (
 	CodecId                    C.enum_AVCodecID
 )
 
+const (
+	MAX_ARRAY_SIZE       = 1<<29 - 1
+	AVFMT_NOFILE         = C.AVFMT_NOFILE
+	AVFMT_GLOBALHEADER   = C.AVFMT_GLOBALHEADER
+	AVFMT_FLAG_CUSTOM_IO = C.AVFMT_FLAG_CUSTOM_IO
+	AVIO_FLAG_WRITE      = C.AVIO_FLAG_WRITE
+	FF_FDEBUG_TS         = C.FF_FDEBUG_TS
+)
+
+const (
+	AVSEEK_FLAG_ANY      = C.AVSEEK_FLAG_ANY
+	AVSEEK_FLAG_BACKWARD = C.AVSEEK_FLAG_BACKWARD
+	AVSEEK_FLAG_BYTE     = C.AVSEEK_FLAG_BYTE
+	AVSEEK_FLAG_FRAME    = C.AVSEEK_FLAG_FRAME
+)
+
 type File C.FILE
 
 //Allocate and read the payload of a packet and initialize its fields with default values.
-func (ctxt *AvIOContext) AvGetPacket(pkt *avcodec.Packet, s int) int {
-	return int(C.av_get_packet((*C.struct_AVIOContext)(ctxt), toCPacket(pkt), C.int(s)))
+func (ctxt *AvIOContext) AvGetPacket(pkt *Packet, s int) int {
+	return int(C.av_get_packet((*C.struct_AVIOContext)(ctxt), (*C.struct_AVPacket)(pkt), C.int(s)))
 }
 
 //Read data and append it to the current content of the Packet.
-func (ctxt *AvIOContext) AvAppendPacket(pkt *avcodec.Packet, s int) int {
-	return int(C.av_append_packet((*C.struct_AVIOContext)(ctxt), toCPacket(pkt), C.int(s)))
-}
-
-func (ctxt *AvIOContext) Close() error {
-	return avutil.ErrorFromCode(int(C.avio_close((*C.AVIOContext)(unsafe.Pointer(ctxt)))))
+func (ctxt *AvIOContext) AvAppendPacket(pkt *Packet, s int) int {
+	return int(C.av_append_packet((*C.struct_AVIOContext)(ctxt), (*C.struct_AVPacket)(pkt), C.int(s)))
 }
 
 func (f *InputFormat) AvRegisterInputFormat() {
-	C.av_register_input_format((*C.struct_AVInputFormat)(f))
+	panic("deprecated")
+	//C.av_register_input_format((*C.struct_AVInputFormat)(f))
 }
 
 func (f *OutputFormat) AvRegisterOutputFormat() {
-	C.av_register_output_format((*C.struct_AVOutputFormat)(f))
+	panic("deprecated")
+	//C.av_register_output_format((*C.struct_AVOutputFormat)(f))
 }
 
 //If f is NULL, returns the first registered input format, if f is non-NULL, returns the next registered input format after f or NULL if f is the last one.
 func (f *InputFormat) AvIformatNext() *InputFormat {
-	return (*InputFormat)(C.av_iformat_next((*C.struct_AVInputFormat)(f)))
+	panic("deprecated")
+	return nil
+	//return (*InputFormat)(C.av_iformat_next((*C.struct_AVInputFormat)(f)))
 }
 
 //If f is NULL, returns the first registered output format, if f is non-NULL, returns the next registered output format after f or NULL if f is the last one.
 func (f *OutputFormat) AvOformatNext() *OutputFormat {
-	return (*OutputFormat)(C.av_oformat_next((*C.struct_AVOutputFormat)(f)))
+	panic("deprecated")
+	return nil
+	//return (*OutputFormat)(C.av_oformat_next((*C.struct_AVOutputFormat)(f)))
+}
+
+func (f *OutputFormat) Flags() int {
+	return int(f.flags)
 }
 
 //Return the LIBAvFORMAT_VERSION_INT constant.
@@ -101,11 +124,6 @@ func AvformatConfiguration() string {
 //Return the libavformat license.
 func AvformatLicense() string {
 	return C.GoString(C.avformat_license())
-}
-
-//Initialize libavformat and register all the muxers, demuxers and protocols.
-func AvRegisterAll() {
-	C.av_register_all()
 }
 
 //Do global initialization of network components.
@@ -135,21 +153,21 @@ func (s *Stream) AvStreamGetSideData(t AvPacketSideDataType, z int) *uint8 {
 
 //Allocate an Context for an output format.
 func AvformatAllocOutputContext2(ctx **Context, o *OutputFormat, fo, fi string) int {
-	Cformat_name := C.CString(fo)
-	defer C.free(unsafe.Pointer(Cformat_name))
-
-	Cfilename := C.CString(fi)
-	defer C.free(unsafe.Pointer(Cfilename))
-
-	return int(C.avformat_alloc_output_context2((**C.struct_AVFormatContext)(unsafe.Pointer(ctx)), (*C.struct_AVOutputFormat)(o), Cformat_name, Cfilename))
+	cfo := (*C.char)(nil)
+	if len(fo) > 0 {
+		cfo = C.CString(fo)
+		defer C.free(unsafe.Pointer(cfo))
+	}
+	cfi := C.CString(fi)
+	defer C.free(unsafe.Pointer(cfi))
+	return int(C.avformat_alloc_output_context2((**C.struct_AVFormatContext)(unsafe.Pointer(ctx)), (*C.struct_AVOutputFormat)(o), cfo, cfi))
 }
 
 //Find InputFormat based on the short name of the input format.
 func AvFindInputFormat(s string) *InputFormat {
-	Cshort_name := C.CString(s)
-	defer C.free(unsafe.Pointer(Cshort_name))
-
-	return (*InputFormat)(C.av_find_input_format(Cshort_name))
+	cs := C.CString(s)
+	defer C.free(unsafe.Pointer(cs))
+	return (*InputFormat)(C.av_find_input_format(cs))
 }
 
 //Guess the file format.
@@ -169,54 +187,57 @@ func AvProbeInputFormat3(pd *AvProbeData, o int, sl *int) *InputFormat {
 
 //Probe a bytestream to determine the input format.
 func AvProbeInputBuffer2(pb *AvIOContext, f **InputFormat, fi string, l int, o, m uint) int {
-	Curl := C.CString(fi)
-	defer C.free(unsafe.Pointer(Curl))
-
-	return int(C.av_probe_input_buffer2((*C.struct_AVIOContext)(pb), (**C.struct_AVInputFormat)(unsafe.Pointer(f)), Curl, unsafe.Pointer(&l), C.uint(o), C.uint(m)))
+	cfi := C.CString(fi)
+	defer C.free(unsafe.Pointer(cfi))
+	return int(C.av_probe_input_buffer2((*C.struct_AVIOContext)(pb), (**C.struct_AVInputFormat)(unsafe.Pointer(f)), cfi, unsafe.Pointer(&l), C.uint(o), C.uint(m)))
 }
 
 //Like av_probe_input_buffer2() but returns 0 on success.
 func AvProbeInputBuffer(pb *AvIOContext, f **InputFormat, fi string, l int, o, m uint) int {
-	Curl := C.CString(fi)
-	defer C.free(unsafe.Pointer(Curl))
+	cfi := C.CString(fi)
+	defer C.free(unsafe.Pointer(cfi))
+	return int(C.av_probe_input_buffer((*C.struct_AVIOContext)(pb), (**C.struct_AVInputFormat)(unsafe.Pointer(f)), cfi, unsafe.Pointer(&l), C.uint(o), C.uint(m)))
+}
 
-	return int(C.av_probe_input_buffer((*C.struct_AVIOContext)(pb), (**C.struct_AVInputFormat)(unsafe.Pointer(f)), Curl, unsafe.Pointer(&l), C.uint(o), C.uint(m)))
+//Create and initialize a AVIOContext for accessing the resource indicated by url.
+func AvIOOpen(pb **AvIOContext, fi string, flags int) int {
+	cfi := C.CString(fi)
+	defer C.free(unsafe.Pointer(cfi))
+	return int(C.avio_open((**C.struct_AVIOContext)(unsafe.Pointer(pb)), cfi, C.int(flags)))
+}
+
+//Close the resource accessed by the AVIOContext *s, free it and set the pointer pointing to it to NULL.
+func AvIOClosep(pb **AvIOContext) int {
+	return int(C.avio_closep((**C.struct_AVIOContext)(unsafe.Pointer(pb))))
 }
 
 //Open an input stream and read the header.
 func AvformatOpenInput(ps **Context, fi string, fmt *InputFormat, d **avutil.Dictionary) int {
-	Cfi := C.CString(fi)
-	defer C.free(unsafe.Pointer(Cfi))
-
-	return int(C.avformat_open_input((**C.struct_AVFormatContext)(unsafe.Pointer(ps)), Cfi, (*C.struct_AVInputFormat)(fmt), (**C.struct_AVDictionary)(unsafe.Pointer(d))))
+	cfi := C.CString(fi)
+	defer C.free(unsafe.Pointer(cfi))
+	return int(C.avformat_open_input((**C.struct_AVFormatContext)(unsafe.Pointer(ps)), cfi, (*C.struct_AVInputFormat)(fmt), (**C.struct_AVDictionary)(unsafe.Pointer(d))))
 }
 
 //Return the output format in the list of registered output formats which best matches the provided parameters, or return NULL if there is no match.
 func AvGuessFormat(sn, f, mt string) *OutputFormat {
-	Cshort_name := C.CString(sn)
-	defer C.free(unsafe.Pointer(Cshort_name))
-
-	Cfilename := C.CString(f)
-	defer C.free(unsafe.Pointer(Cfilename))
-
-	Cmime_type := C.CString(mt)
-	defer C.free(unsafe.Pointer(Cmime_type))
-
-	return (*OutputFormat)(C.av_guess_format(Cshort_name, Cfilename, Cmime_type))
+	csn := C.CString(sn)
+	defer C.free(unsafe.Pointer(csn))
+	cf := C.CString(f)
+	defer C.free(unsafe.Pointer(cf))
+	cmt := C.CString(mt)
+	defer C.free(unsafe.Pointer(cmt))
+	return (*OutputFormat)(C.av_guess_format(csn, cf, cmt))
 }
 
 //Guess the codec ID based upon muxer and filename.
 func AvGuessCodec(fmt *OutputFormat, sn, f, mt string, t MediaType) CodecId {
-	Cshort_name := C.CString(sn)
-	defer C.free(unsafe.Pointer(Cshort_name))
-
-	Cfilename := C.CString(f)
-	defer C.free(unsafe.Pointer(Cfilename))
-
-	Cmime_type := C.CString(mt)
-	defer C.free(unsafe.Pointer(Cmime_type))
-
-	return (CodecId)(C.av_guess_codec((*C.struct_AVOutputFormat)(fmt), Cshort_name, Cfilename, Cmime_type, (C.enum_AVMediaType)(t)))
+	csn := C.CString(sn)
+	defer C.free(unsafe.Pointer(csn))
+	cf := C.CString(f)
+	defer C.free(unsafe.Pointer(cf))
+	cmt := C.CString(mt)
+	defer C.free(unsafe.Pointer(cmt))
+	return (CodecId)(C.av_guess_codec((*C.struct_AVOutputFormat)(fmt), csn, cf, cmt, (C.enum_AVMediaType)(t)))
 }
 
 //Send a nice hexadecimal dump of a buffer to the specified file stream.
@@ -230,13 +251,13 @@ func AvHexDumpLog(a, l int, b *uint8, s int) {
 }
 
 //Send a nice dump of a packet to the specified file stream.
-func AvPktDump2(f *File, pkt *avcodec.Packet, dp int, st *Stream) {
-	C.av_pkt_dump2((*C.FILE)(f), toCPacket(pkt), C.int(dp), (*C.struct_AVStream)(st))
+func AvPktDump2(f *File, pkt *Packet, dp int, st *Stream) {
+	C.av_pkt_dump2((*C.FILE)(f), (*C.struct_AVPacket)(pkt), C.int(dp), (*C.struct_AVStream)(st))
 }
 
 //Send a nice dump of a packet to the log.
-func AvPktDumpLog2(a int, l int, pkt *avcodec.Packet, dp int, st *Stream) {
-	C.av_pkt_dump_log2(unsafe.Pointer(&a), C.int(l), toCPacket(pkt), C.int(dp), (*C.struct_AVStream)(st))
+func AvPktDumpLog2(a int, l int, pkt *Packet, dp int, st *Stream) {
+	C.av_pkt_dump_log2(unsafe.Pointer(&a), C.int(l), (*C.struct_AVPacket)(pkt), C.int(dp), (*C.struct_AVStream)(st))
 }
 
 //enum CodecId av_codec_get_id (const struct AvCodecTag *const *tags, unsigned int tag)
@@ -266,76 +287,52 @@ func AvAddIndexEntry(st *Stream, pos, t, int64, s, d, f int) int {
 }
 
 //Split a URL string into components.
-func AvUrlSplit(proto_size, authorization_size, hostname_size int, pp *int, path_size int, url string) (proto, authorization, hostname, path string) {
-	Cproto := (*C.char)(C.malloc(C.sizeof_char * C.ulong(proto_size)))
-	defer C.free(unsafe.Pointer(Cproto))
-
-	Cauthorization := (*C.char)(C.malloc(C.sizeof_char * C.ulong(authorization_size)))
-	defer C.free(unsafe.Pointer(Cauthorization))
-
-	Chostname := (*C.char)(C.malloc(C.sizeof_char * C.ulong(hostname_size)))
-	defer C.free(unsafe.Pointer(Chostname))
-
-	Cpath := (*C.char)(C.malloc(C.sizeof_char * C.ulong(path_size)))
-	defer C.free(unsafe.Pointer(Cpath))
-
-	Curl := C.CString(url)
-	defer C.free(unsafe.Pointer(Curl))
-
-	C.av_url_split(
-		Cproto, C.int(proto_size),
-		Cauthorization, C.int(authorization_size),
-		Chostname, C.int(hostname_size),
-		(*C.int)(unsafe.Pointer(pp)),
-		Cpath, C.int(path_size),
-		Curl,
-	)
-
-	return C.GoString(Cproto), C.GoString(Cauthorization), C.GoString(Chostname), C.GoString(Cpath)
+func AvUrlSplit(p string, ps int, a string, as int, h string, hs int, pp *int, path string, psize int, url string) {
+	cp := C.CString(p)
+	defer C.free(unsafe.Pointer(cp))
+	ca := C.CString(a)
+	defer C.free(unsafe.Pointer(ca))
+	ch := C.CString(h)
+	defer C.free(unsafe.Pointer(ch))
+	cpa := C.CString(path)
+	defer C.free(unsafe.Pointer(cpa))
+	cu := C.CString(url)
+	defer C.free(unsafe.Pointer(cu))
+	C.av_url_split(cp, C.int(ps), ca, C.int(as), ch, C.int(hs), (*C.int)(unsafe.Pointer(pp)), cpa, C.int(psize), cu)
 }
 
 //int av_get_frame_filename (char *buf, int buf_size, const char *path, int number)
 //Return in 'buf' the path with 'd' replaced by a number.
-func AvGetFrameFilename(buf_size int, path string, number int) (int, string) {
-	Cbuf := (*C.char)(C.malloc(C.sizeof_char * C.ulong(buf_size)))
-	defer C.free(unsafe.Pointer(Cbuf))
-
-	Cpath := C.CString(path)
-	defer C.free(unsafe.Pointer(Cpath))
-
-	ret := int(C.av_get_frame_filename(Cbuf, C.int(buf_size), Cpath, C.int(number)))
-
-	return ret, C.GoString(Cbuf)
+func AvGetFrameFilename(b string, bs int, pa string, n int) int {
+	cb := C.CString(b)
+	defer C.free(unsafe.Pointer(cb))
+	cpa := C.CString(pa)
+	defer C.free(unsafe.Pointer(cpa))
+	return int(C.av_get_frame_filename(cb, C.int(bs), cpa, C.int(n)))
 }
 
 //Check whether filename actually is a numbered sequence generator.
-func AvFilenameNumberTest(filename string) int {
-	Cfilename := C.CString(filename)
-	defer C.free(unsafe.Pointer(Cfilename))
-
-	return int(C.av_filename_number_test(Cfilename))
+func AvFilenameNumberTest(f string) int {
+	cf := C.CString(f)
+	defer C.free(unsafe.Pointer(cf))
+	return int(C.av_filename_number_test(cf))
 }
 
 //Generate an SDP for an RTP session.
-func AvSdpCreate(ac **Context, n_files int, buf_size int) (int, string) {
-	Cbuf := (*C.char)(C.malloc(C.sizeof_char * C.ulong(buf_size)))
-	defer C.free(unsafe.Pointer(Cbuf))
-
-	ret := int(C.av_sdp_create((**C.struct_AVFormatContext)(unsafe.Pointer(ac)), C.int(n_files), Cbuf, C.int(buf_size)))
-
-	return ret, C.GoString(Cbuf)
+func AvSdpCreate(ac **Context, nf int, b string, s int) int {
+	cb := C.CString(b)
+	defer C.free(unsafe.Pointer(cb))
+	return int(C.av_sdp_create((**C.struct_AVFormatContext)(unsafe.Pointer(ac)), C.int(nf), cb, C.int(s)))
 }
 
 //int av_match_ext (const char *filename, const char *extensions)
 //Return a positive value if the given filename has one of the given extensions, 0 otherwise.
-func AvMatchExt(filename, extensions string) int {
-	Cfilename := C.CString(filename)
-	defer C.free(unsafe.Pointer(Cfilename))
-
-	Cextensions := C.CString(extensions)
-	defer C.free(unsafe.Pointer(Cextensions))
-
-	return int(C.av_match_ext(Cfilename, Cextensions))
+func AvMatchExt(f, e string) int {
+	cf := C.CString(f)
+	defer C.free(unsafe.Pointer(cf))
+	ce := C.CString(e)
+	defer C.free(unsafe.Pointer(ce))
+	return int(C.av_match_ext(cf, ce))
 }
 
 //Test if the given container can store a codec.
@@ -358,13 +355,4 @@ func AvformatGetMovVideoTags() *AvCodecTag {
 
 func AvformatGetMovAudioTags() *AvCodecTag {
 	return (*AvCodecTag)(C.avformat_get_mov_audio_tags())
-}
-
-func AvIOOpen(url string, flags int) (res *AvIOContext, err error) {
-	urlStr := C.CString(url)
-	defer C.free(unsafe.Pointer(urlStr))
-
-	err = avutil.ErrorFromCode(int(C.avio_open((**C.AVIOContext)(unsafe.Pointer(&res)), urlStr, C.int(flags))))
-
-	return
 }

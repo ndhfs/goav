@@ -16,14 +16,29 @@ package swscale
 import "C"
 import (
 	"unsafe"
+
+	"github.com/asticode/goav/avutil"
 )
 
 type (
-	Context     C.struct_SwsContext
-	Filter      C.struct_SwsFilter
-	Vector      C.struct_SwsVector
-	Class       C.struct_AVClass
-	PixelFormat C.enum_AVPixelFormat
+	Context C.struct_SwsContext
+	Filter  C.struct_SwsFilter
+	Vector  C.struct_SwsVector
+	Class   C.struct_AVClass
+)
+
+const (
+	SWS_FAST_BILINEAR = 1
+	SWS_BILINEAR      = 2
+	SWS_BICUBIC       = 4
+	SWS_X             = 8
+	SWS_POINT         = 0x10
+	SWS_AREA          = 0x20
+	SWS_BICUBLIN      = 0x40
+	SWS_GAUSS         = 0x80
+	SWS_SINC          = 0x100
+	SWS_LANCZOS       = 0x200
+	SWS_SPLINE        = 0x400
 )
 
 //Return the LIBSWSCALE_VERSION_INT constant.
@@ -47,35 +62,26 @@ func SwsGetcoefficients(c int) *int {
 }
 
 //Return a positive value if pix_fmt is a supported input format, 0 otherwise.
-func SwsIssupportedinput(p PixelFormat) int {
+func SwsIssupportedinput(p avutil.PixelFormat) int {
 	return int(C.sws_isSupportedInput((C.enum_AVPixelFormat)(p)))
 }
 
 //Return a positive value if pix_fmt is a supported output format, 0 otherwise.
-func SwsIssupportedoutput(p PixelFormat) int {
+func SwsIssupportedoutput(p avutil.PixelFormat) int {
 	return int(C.sws_isSupportedOutput((C.enum_AVPixelFormat)(p)))
 }
 
-func SwsIssupportedendiannessconversion(p PixelFormat) int {
+func SwsIssupportedendiannessconversion(p avutil.PixelFormat) int {
 	return int(C.sws_isSupportedEndiannessConversion((C.enum_AVPixelFormat)(p)))
 }
 
 ////Scale the image slice in srcSlice and put the resulting scaled slice in the image in dst.
-func SwsScale(ctxt *Context, src *uint8, str int, y, h int, d *uint8, ds int) int {
+func SwsScale(ctxt *Context, src [8]*uint8, str [8]int32, y, h int, d [8]*uint8, ds [8]int32) int {
 	cctxt := (*C.struct_SwsContext)(unsafe.Pointer(ctxt))
-	csrc := (*C.uint8_t)(unsafe.Pointer(src))
+	csrc := (**C.uint8_t)(unsafe.Pointer(&src[0]))
 	cstr := (*C.int)(unsafe.Pointer(&str))
-	cd := (*C.uint8_t)(unsafe.Pointer(d))
+	cd := (**C.uint8_t)(unsafe.Pointer(&d[0]))
 	cds := (*C.int)(unsafe.Pointer(&ds))
-	return int(C.sws_scale(cctxt, &csrc, cstr, C.int(y), C.int(h), &cd, cds))
-}
-
-func SwsScale2(ctxt *Context, srcData [8]*uint8, srcStride [8]int32, y, h int, dstData [8]*uint8, dstStride [8]int32) int {
-	cctxt := (*C.struct_SwsContext)(unsafe.Pointer(ctxt))
-	csrc := (**C.uint8_t)(unsafe.Pointer(&srcData[0]))
-	cstr := (*C.int)(unsafe.Pointer(&srcStride[0]))
-	cd := (**C.uint8_t)(unsafe.Pointer(&dstData[0]))
-	cds := (*C.int)(unsafe.Pointer(&dstStride))
 	return int(C.sws_scale(cctxt, csrc, cstr, C.int(y), C.int(h), cd, cds))
 }
 

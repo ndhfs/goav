@@ -1,7 +1,16 @@
-// Use of this source code is governed by a MIT license that can be found in the LICENSE file.
-// Giorgis (habtom@giorgis.io)
-
 package avcodec
+
+/*
+#cgo pkg-config: libavcodec
+#include <libavcodec/avcodec.h>
+*/
+import "C"
+
+import (
+	"unsafe"
+
+	"github.com/asticode/goav/avutil"
+)
 
 func (ctxt *Context) ActiveThreadType() int {
 	return int(ctxt.active_thread_type)
@@ -53,6 +62,18 @@ func (ctxt *Context) BrdScale() int {
 
 func (ctxt *Context) Channels() int {
 	return int(ctxt.channels)
+}
+
+func (ctxt *Context) SetChannels(channels int) {
+	ctxt.channels = C.int(channels)
+}
+
+func (ctxt *Context) ChannelLayout() uint64 {
+	return uint64(ctxt.channel_layout)
+}
+
+func (ctxt *Context) SetChannelLayout(channelLayout uint64) {
+	ctxt.channel_layout = C.uint64_t(channelLayout)
 }
 
 func (ctxt *Context) Chromaoffset() int {
@@ -123,6 +144,10 @@ func (ctxt *Context) Flags() int {
 	return int(ctxt.flags)
 }
 
+func (ctxt *Context) SetFlags(flags int) {
+	ctxt.flags = C.int(flags)
+}
+
 func (ctxt *Context) Flags2() int {
 	return int(ctxt.flags2)
 }
@@ -133,6 +158,14 @@ func (ctxt *Context) FrameBits() int {
 
 func (ctxt *Context) FrameNumber() int {
 	return int(ctxt.frame_number)
+}
+
+func (ctxt *Context) Framerate() avutil.Rational {
+	return *(*avutil.Rational)(unsafe.Pointer(&ctxt.framerate))
+}
+
+func (ctxt *Context) SetFramerate(framerate avutil.Rational) {
+	ctxt.framerate = *((*C.struct_AVRational)(unsafe.Pointer(&framerate)))
 }
 
 func (ctxt *Context) FrameSize() int {
@@ -163,6 +196,10 @@ func (ctxt *Context) GopSize() int {
 	return int(ctxt.gop_size)
 }
 
+func (ctxt *Context) SetGopSize(gopSize int) {
+	ctxt.gop_size = C.int(gopSize)
+}
+
 func (ctxt *Context) HasBFrames() int {
 	return int(ctxt.has_b_frames)
 }
@@ -173,6 +210,10 @@ func (ctxt *Context) HeaderBits() int {
 
 func (ctxt *Context) Height() int {
 	return int(ctxt.height)
+}
+
+func (ctxt *Context) SetHeight(height int) {
+	ctxt.height = C.int(height)
 }
 
 func (ctxt *Context) ICount() int {
@@ -229,6 +270,10 @@ func (ctxt *Context) LumiMasking() float64 {
 
 func (ctxt *Context) MaxBFrames() int {
 	return int(ctxt.max_b_frames)
+}
+
+func (ctxt *Context) SetMaxBFrames(maxBFrames int) {
+	ctxt.max_b_frames = C.int(maxBFrames)
 }
 
 func (ctxt *Context) MaxPredictionOrder() int {
@@ -395,6 +440,10 @@ func (ctxt *Context) SampleRate() int {
 	return int(ctxt.sample_rate)
 }
 
+func (ctxt *Context) SetSampleRate(sampleRate int) {
+	ctxt.sample_rate = C.int(sampleRate)
+}
+
 func (ctxt *Context) ScenechangeThreshold() int {
 	return int(ctxt.scenechange_threshold)
 }
@@ -459,6 +508,14 @@ func (ctxt *Context) ThreadCount() int {
 	return int(ctxt.thread_count)
 }
 
+func (ctxt *Context) SetThreadCount(threadCount int) {
+	ctxt.thread_count = C.int(threadCount)
+}
+
+func (ctxt *Context) SetBitRate(bitRate int64) {
+	ctxt.bit_rate = C.int64_t(bitRate)
+}
+
 func (ctxt *Context) ThreadSafeCallbacks() int {
 	return int(ctxt.thread_safe_callbacks)
 }
@@ -477,6 +534,10 @@ func (ctxt *Context) Trellis() int {
 
 func (ctxt *Context) Width() int {
 	return int(ctxt.width)
+}
+
+func (ctxt *Context) SetWidth(width int) {
+	ctxt.width = C.int(width)
 }
 
 func (ctxt *Context) WorkaroundBugs() int {
@@ -523,8 +584,12 @@ func (ctxt *Context) FieldOrder() AvFieldOrder {
 	return (AvFieldOrder)(ctxt.field_order)
 }
 
-func (ctxt *Context) PixFmt() PixelFormat {
-	return (PixelFormat)(ctxt.pix_fmt)
+func (ctxt *Context) PixFmt() avutil.PixelFormat {
+	return (avutil.PixelFormat)(ctxt.pix_fmt)
+}
+
+func (ctxt *Context) SetPixFmt(pixFmt avutil.PixelFormat) {
+	ctxt.pix_fmt = C.enum_AVPixelFormat(pixFmt)
 }
 
 func (ctxt *Context) RequestSampleFmt() AvSampleFormat {
@@ -535,8 +600,15 @@ func (ctxt *Context) SampleFmt() AvSampleFormat {
 	return (AvSampleFormat)(ctxt.sample_fmt)
 }
 
+func (ctxt *Context) SetSampleFmt(sampleFormat AvSampleFormat) {
+	ctxt.sample_fmt = C.enum_AVSampleFormat(sampleFormat)
+}
 func (ctxt *Context) SkipFrame() AvDiscard {
 	return (AvDiscard)(ctxt.skip_frame)
+}
+
+func (ctxt *Context) SetSkipFrame(d AvDiscard) {
+	ctxt.skip_frame = C.enum_AVDiscard(d)
 }
 
 func (ctxt *Context) SkipIdct() AvDiscard {
@@ -545,4 +617,20 @@ func (ctxt *Context) SkipIdct() AvDiscard {
 
 func (ctxt *Context) SkipLoopFilter() AvDiscard {
 	return (AvDiscard)(ctxt.skip_loop_filter)
+}
+
+func (ctxt *Context) TimeBase() avutil.Rational {
+	return *(*avutil.Rational)(unsafe.Pointer(&ctxt.time_base))
+}
+
+func (ctxt *Context) SetTimeBase(timeBase avutil.Rational) {
+	ctxt.time_base = *((*C.struct_AVRational)(unsafe.Pointer(&timeBase)))
+}
+
+func (ctxt *Context) SampleAspectRatio() avutil.Rational {
+	return *(*avutil.Rational)(unsafe.Pointer(&ctxt.sample_aspect_ratio))
+}
+
+func (ctxt *Context) SetSampleAspectRatio(r avutil.Rational) {
+	ctxt.sample_aspect_ratio = *((*C.struct_AVRational)(unsafe.Pointer(&r)))
 }

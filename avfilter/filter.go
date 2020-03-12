@@ -8,18 +8,25 @@ package avfilter
 	#include <libavfilter/avfilter.h>
 */
 import "C"
+import "unsafe"
 
 //Get a filter definition matching the given name.
 func AvfilterGetByName(n string) *Filter {
-	return (*Filter)(C.avfilter_get_by_name(C.CString(n)))
+	cn := C.CString(n)
+	defer C.free(unsafe.Pointer(cn))
+	return (*Filter)(C.avfilter_get_by_name(cn))
 }
 
 //Register a filter.
 func (f *Filter) AvfilterRegister() int {
-	return int(C.avfilter_register((*C.struct_AVFilter)(f)))
+	panic("deprecated")
+	return 0
+	//return int(C.avfilter_register((*C.struct_AVFilter)(f)))
 }
 
 //Iterate over all registered filters.
 func (f *Filter) AvfilterNext() *Filter {
-	return (*Filter)(C.avfilter_next((*C.struct_AVFilter)(f)))
+	panic("deprecated")
+	return nil
+	//return (*Filter)(C.avfilter_next((*C.struct_AVFilter)(f)))
 }
