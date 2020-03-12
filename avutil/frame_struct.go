@@ -6,12 +6,12 @@ package avutil
 import "C"
 import "unsafe"
 
-func (f *Frame) Data() *uint8 {
-	return (*uint8)(unsafe.Pointer((*C.uint8_t)(unsafe.Pointer(&f.data))))
+func (f *Frame) Data() **uint8 {
+	return (**uint8)(unsafe.Pointer(&(f.data[0])))
 }
 
-func (f *Frame) Linesize() int {
-	return int(*(*C.int)(unsafe.Pointer(&f.linesize)))
+func (f *Frame) Linesize() *int32 {
+	return (*int32)(unsafe.Pointer(&(f.linesize[0])))
 }
 
 func (f *Frame) Width() int {
