@@ -14,20 +14,20 @@ func (f *Frame) Linesize() *int32 {
 	return (*int32)(unsafe.Pointer(&(f.linesize[0])))
 }
 
-func (f *Frame) Width() int {
-	return int(f.width)
+func (f *Frame) Width() uint {
+	return uint(f.width)
 }
 
-func (f *Frame) SetWidth(w int) {
+func (f *Frame) SetWidth(w uint) {
 	f.width = C.int(w)
 }
 
-func (f *Frame) Height() int {
-	return int(f.height)
+func (f *Frame) Height() uint {
+	return uint(f.height)
 }
 
-func (f *Frame) SetHeight(h int) {
-	f.height = C.int(h)
+func (f *Frame) SetHeight(h uint) {
+	f.height = C.uint(h)
 }
 
 func (f *Frame) Format() int {

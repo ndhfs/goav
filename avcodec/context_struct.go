@@ -80,12 +80,12 @@ func (ctxt *Context) Chromaoffset() int {
 	return int(ctxt.chromaoffset)
 }
 
-func (ctxt *Context) CodedHeight() int {
-	return int(ctxt.coded_height)
+func (ctxt *Context) CodedHeight() uint {
+	return uint(ctxt.coded_height)
 }
 
-func (ctxt *Context) CodedWidth() int {
-	return int(ctxt.coded_width)
+func (ctxt *Context) CodedWidth() uint {
+	return uint(ctxt.coded_width)
 }
 
 func (ctxt *Context) CoderType() int {
@@ -208,11 +208,11 @@ func (ctxt *Context) HeaderBits() int {
 	return int(ctxt.header_bits)
 }
 
-func (ctxt *Context) Height() int {
-	return int(ctxt.height)
+func (ctxt *Context) Height() uint {
+	return uint(ctxt.height)
 }
 
-func (ctxt *Context) SetHeight(height int) {
+func (ctxt *Context) SetHeight(height uint) {
 	ctxt.height = C.int(height)
 }
 
@@ -532,11 +532,11 @@ func (ctxt *Context) Trellis() int {
 	return int(ctxt.trellis)
 }
 
-func (ctxt *Context) Width() int {
-	return int(ctxt.width)
+func (ctxt *Context) Width() uint {
+	return uint(ctxt.width)
 }
 
-func (ctxt *Context) SetWidth(width int) {
+func (ctxt *Context) SetWidth(width uint) {
 	ctxt.width = C.int(width)
 }
 

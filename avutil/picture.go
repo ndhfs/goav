@@ -18,15 +18,14 @@ func AvFreeImageBuffer(buffer []uint8) {
 }
 
 //Return the size in bytes of the amount of data required to store an image with the given parameters.
-func AvImageGetBufferSize(pixFmt PixelFormat, width, height, align int) int {
+func AvImageGetBufferSize(pixFmt PixelFormat, width uint, height uint, align int) int {
 	return int(C.av_image_get_buffer_size((C.enum_AVPixelFormat)(pixFmt), C.int(width), C.int(height), C.int(align)))
 }
 
 //Setup the data pointers and linesizes based on the specified image parameters and the provided array.
-func AvImageFillArrays(dstData [8]*uint8, dstLinesize [8]int32, src []uint8,
-	pixFmt PixelFormat, width, height, align int) int {
-	cData := (**C.uint8_t)(unsafe.Pointer(&dstData[0]))
-	cLinesize := (*C.int)(unsafe.Pointer(&dstLinesize[0]))
+func AvImageFillArrays(dstData **uint8, dstLinesize *int32, src []uint8, pixFmt PixelFormat, width uint, height uint, align int) int {
+	cData := (**C.uint8_t)(unsafe.Pointer(dstData))
+	cLinesize := (*C.int)(unsafe.Pointer(dstLinesize))
 	cSrc := (*C.uint8_t)(unsafe.Pointer(&src[0]))
 	cPixFmt := (C.enum_AVPixelFormat)(pixFmt)
 
@@ -36,9 +35,9 @@ func AvImageFillArrays(dstData [8]*uint8, dstLinesize [8]int32, src []uint8,
 // Allocate an image with size w and h and pixel format pix_fmt, and fill pointers and linesizes accordingly.
 //
 // The allocated image buffer has to be freed by using AvFreeP(&pointers[0]).
-func AvImageAlloc(pointers [8]*uint8, linesizes [8]int32, w, h int, pix_fmt PixelFormat, align int) int {
-	cPointers := (**C.uint8_t)(unsafe.Pointer(&pointers[0]))
-	cLinesizes := (*C.int)(unsafe.Pointer(&linesizes[0]))
+func AvImageAlloc(pointers **uint8, linesizes *int32, w, h uint, pix_fmt PixelFormat, align int) int {
+	cPointers := (**C.uint8_t)(unsafe.Pointer(pointers))
+	cLinesizes := (*C.int)(unsafe.Pointer(linesizes))
 	cPixFmt := (C.enum_AVPixelFormat)(pix_fmt)
 
 	return int(C.av_image_alloc(cPointers, cLinesizes, C.int(w), C.int(h), cPixFmt, C.int(align)))
