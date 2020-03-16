@@ -83,6 +83,11 @@ func (ctxt *AvIOContext) AvAppendPacket(pkt *Packet, s int) int {
 	return int(C.av_append_packet((*C.struct_AVIOContext)(ctxt), (*C.struct_AVPacket)(pkt), C.int(s)))
 }
 
+//Initialize libavformat and register all the muxers, demuxers and protocols.
+func AvRegisterAll() {
+	C.av_register_all()
+}
+
 func (f *InputFormat) AvRegisterInputFormat() {
 	panic("deprecated")
 	//C.av_register_input_format((*C.struct_AVInputFormat)(f))
