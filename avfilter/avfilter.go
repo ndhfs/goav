@@ -103,8 +103,7 @@ func AvfilterProcessCommand(f *Context, cmd, arg, res string, l, fl int) int {
 
 //Initialize the filter system.
 func AvfilterRegisterAll() {
-	panic("deprecated")
-	//C.avfilter_register_all()
+	C.avfilter_register_all()
 }
 
 //Initialize a filter with the supplied parameters.
